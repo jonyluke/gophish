@@ -263,23 +263,19 @@ func (s *ModelsSuite) TestMailLogGenerate(ch *check.C) {
 	ch.Assert(string(got.HTML), check.Equals, string(expected.HTML))
 }
 
-func (s *ModelsSuite) TestMailLogGenerateTransparencyHeaders(ch *check.C) {
+func (s *ModelsSuite) TestMailLogGenerateNoTransparencyHeaders(ch *check.C) {
 	s.config.ContactAddress = "test@test.com"
-	expectedHeaders := map[string]string{
-		"X-Mailer":          config.ServerName,
-		"X-Gophish-Contact": s.config.ContactAddress,
-	}
 	campaign := s.createCampaign(ch)
 	got := s.emailFromFirstMailLog(campaign, ch)
-	for k, v := range expectedHeaders {
-		ch.Assert(got.Headers.Get(k), check.Equals, v)
-	}
+	// Verify that transparency headers are NOT present
+	ch.Assert(got.Headers.Get("X-Mailer"), check.Equals, "")
+	ch.Assert(got.Headers.Get("X-Gophish-Contact"), check.Equals, "")
 }
 
 func (s *ModelsSuite) TestMailLogGenerateOverrideTransparencyHeaders(ch *check.C) {
 	expectedHeaders := map[string]string{
-		"X-Mailer":          "",
-		"X-Gophish-Contact": "",
+		"X-Mailer":          "custom-mailer",
+		"X-Gophish-Contact": "contact@example.com",
 	}
 	smtp := SMTP{
 		Name:        "Test SMTP",
@@ -287,8 +283,8 @@ func (s *ModelsSuite) TestMailLogGenerateOverrideTransparencyHeaders(ch *check.C
 		FromAddress: "foo@example.com",
 		UserId:      1,
 		Headers: []Header{
-			Header{Key: "X-Gophish-Contact", Value: ""},
-			Header{Key: "X-Mailer", Value: ""},
+			Header{Key: "X-Gophish-Contact", Value: "contact@example.com"},
+			Header{Key: "X-Mailer", Value: "custom-mailer"},
 		},
 	}
 	ch.Assert(PostSMTP(&smtp), check.Equals, nil)
